@@ -11,7 +11,7 @@ class StockTradingEnvRand(StockTradingEnv):
     """
     This environment extends the functionality of the StockTradingEnv class by
     incorporating randomization of the initial state and allowing for a custom episode
-    length determined by training_data_len variable.
+    length determined by episode_len variable.
     """
 
     metadata = {"render.modes": ["human"]}
@@ -19,7 +19,6 @@ class StockTradingEnvRand(StockTradingEnv):
     def __init__(
         self,
         df: pd.DataFrame,
-        training_data_len: int,
         stock_dim: int,
         hmax: int,
         initial_amount: int,
@@ -30,6 +29,7 @@ class StockTradingEnvRand(StockTradingEnv):
         state_space: int,
         action_space: int,
         tech_indicator_list: list[str],
+        episode_len=None,
         turbulence_threshold=None,
         risk_indicator_col="turbulence",
         make_plots: bool = False,
@@ -65,7 +65,9 @@ class StockTradingEnvRand(StockTradingEnv):
             iteration,
         )
         self.start_idx = 0
-        self.training_data_len = training_data_len
+        if not episode_len:
+            episode_len = len(self.df.index.unique())
+        self.episode_len = episode_len
 
     def reset(
         self,
@@ -75,7 +77,7 @@ class StockTradingEnvRand(StockTradingEnv):
     ):
         # initiate state
         self.start_idx = np.random.randint(
-            len(self.df.index.unique()) - self.training_data_len + 1
+            len(self.df.index.unique()) - self.episode_len + 1
         )
         self.day = self.start_idx
         self.data = self.df.loc[self.day, :]
@@ -112,7 +114,7 @@ class StockTradingEnvRand(StockTradingEnv):
         return np.array(self.state), {}
 
     def step(self, actions):
-        self.terminal = self.day >= self.start_idx + self.training_data_len - 1
+        self.terminal = self.day >= self.start_idx + self.episode_len - 1
         if self.terminal:
             # print(f"Episode: {self.episode}")
             if self.make_plots:
